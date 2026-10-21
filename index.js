@@ -24,7 +24,7 @@ const server = http.createServer((req, res) => {
   res.writeHead(404); res.end("Not found");
 });
 
-const wss = new WebSocketServer({ server, path: "/ws", maxPayload: 100 * 1024 * 1024 }); // 100MB limit
+const wss = new WebSocketServer({ server, path: "/ws", maxPayload: 100 * 1024 * 1024 });
 
 function broadcast(room, msg, except = null) {
   const data = JSON.stringify(msg);
@@ -90,15 +90,18 @@ wss.on("connection", (ws, req) => {
     if (msg.type === "snapshot") {
       if (myIsHost && Array.isArray(msg.data)) {
         room.snapshot = msg.data;
-        room.history = [];
+        room.history = []; // Очищаем историю при новом снапшоте
         console.log(`[Snapshot] Room ${lobbyId}: ${room.snapshot.length} items.`);
       }
       return;
     }
 
     if (msg.type === "delta") {
-      room.history.push(msg);
-      if (room.history.length > 10000) room.history.shift();
+      // КАМЕРУ НЕ СОХРАНЯЕМ В ИСТОРИЮ (это спамит память и вызывает лаги)
+      if (msg.kind !== "camera") {
+        room.history.push(msg);
+        if (room.history.length > 5000) room.history.shift(); // ограничили 5000
+      }
       broadcast(room, msg, ws);
       return;
     }
