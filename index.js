@@ -6,7 +6,7 @@ const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || "change-me";
 const HOST_PUBLIC_URL = process.env.HOST_PUBLIC_URL || "";
 
-const rooms = new Map(); // lobbyId -> {clients: Map<ws,{userId,userName,isHost}>, snapshot: [], hostUserId, history: []}
+const rooms = new Map();
 
 function getRoom(lobbyId) {
   if (!rooms.has(lobbyId)) {
@@ -142,7 +142,6 @@ wss.on("connection", (ws) => {
   });
 });
 
-// keep-alive каждые 10 секунд
 setInterval(() => {
   const url = HOST_PUBLIC_URL ? HOST_PUBLIC_URL + "/health" : `http://localhost:${PORT}/health`;
   fetch(url).catch(() => {});
