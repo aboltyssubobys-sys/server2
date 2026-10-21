@@ -61,6 +61,7 @@ wss.on("connection", (ws) => {
         myUserName = decoded.userName || msg.userName || String(myUserId);
         myIsHost = !!decoded.isHost;
       } catch (e) {
+        console.log("WS Auth error:", e.message);
         try { ws.send(JSON.stringify({ type: "error", message: "bad token: " + String(e) })); } catch {}
         try { ws.close(); } catch {}
         return;
@@ -69,12 +70,14 @@ wss.on("connection", (ws) => {
       room.clients.set(ws, { userId: myUserId, userName: myUserName, isHost: myIsHost });
       if (!room.hostUserId) room.hostUserId = myIsHost ? myUserId : null;
       
+      console.log(`User ${myUserName} (${myUserId}) joined room ${lobbyId}. Host: ${myIsHost}`);
+      
       try {
         ws.send(JSON.stringify({
           type: "welcome",
           lobbyId,
           snapshot: room.snapshot,
-          history: room.history, // <-- ОТПРАВЛЯЕМ ИСТОРИЮ ИЗМЕНЕНИЙ
+          history: room.history,
           players: [...room.clients.values()].map(v => ({ userId: v.userId, userName: v.userName, isHost: v.isHost })),
         }));
       } catch {}
@@ -88,7 +91,8 @@ wss.on("connection", (ws) => {
     if (msg.type === "snapshot") {
       if (myIsHost && Array.isArray(msg.data)) {
         room.snapshot = msg.data;
-        room.history = []; // Очищаем старую историю, так как есть новый снапшот
+        room.history = [];
+        console.log(`Snapshot received for room ${lobbyId} (${room.snapshot.length} items)`);
       }
       return;
     }
