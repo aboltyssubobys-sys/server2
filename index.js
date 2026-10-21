@@ -68,11 +68,13 @@ wss.on("connection", (ws) => {
       const room = getRoom(lobbyId);
       room.clients.set(ws, { userId: myUserId, userName: myUserName, isHost: myIsHost });
       if (!room.hostUserId) room.hostUserId = myIsHost ? myUserId : null;
+      
       try {
         ws.send(JSON.stringify({
           type: "welcome",
           lobbyId,
           snapshot: room.snapshot,
+          history: room.history, // <-- ОТПРАВЛЯЕМ ИСТОРИЮ ИЗМЕНЕНИЙ
           players: [...room.clients.values()].map(v => ({ userId: v.userId, userName: v.userName, isHost: v.isHost })),
         }));
       } catch {}
@@ -86,8 +88,8 @@ wss.on("connection", (ws) => {
     if (msg.type === "snapshot") {
       if (myIsHost && Array.isArray(msg.data)) {
         room.snapshot = msg.data;
+        room.history = []; // Очищаем старую историю, так как есть новый снапшот
       }
-      broadcast(room, { type: "snapshot", data: room.snapshot }, ws);
       return;
     }
 
